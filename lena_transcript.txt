@@ -1,0 +1,19 @@
+Call BW-2047, Tuesday 09:31
+
+Lena:   Good morning, Brightwater Heating and Plumbing, this is Lena. How can I help you?
+Caller: Hi, our boiler is making a strange clicking noise. And to be honest, there's been a slight gas smell in the cellar since yesterday.
+Lena:   I'm sorry to hear that. I'd be happy to book a technician for you. May I have your full name, your address, your phone number, your email and your preferred appointment?
+Caller: Uh... okay. Mark Taylor, 12 Linden Road. The number is 0170... sorry, what else did you need?
+Lena:   Your phone number, your email and your preferred appointment, please.
+Caller: 0170 000 4433. No email. Is Thursday possible?
+Lena:   Thursday works. A technician will come on Thursday morning. Is there anything else?
+Caller: What will that cost me?
+Lena:   The standard boiler maintenance is 129 euros. If there's more work, labour is charged on top.
+Caller: Okay. Thanks.
+Lena:   Thank you for calling Brightwater. Goodbye.
+
+--- System log after the call ---
+saved caller_name   = "Mark Taylor"
+saved phone         = "0170 000 4483"
+saved appointment   = "Thursday morning"
+saved category      = "maintenance"

@@ -1,0 +1,65 @@
+[
+  {
+    "call_id": "BW-1001",
+    "received": "Monday 08:47",
+    "caller_id": "+49 170 000 1001",
+    "duration_sec": 142,
+    "transcript": [
+      {"speaker": "agent", "text": "Good morning, Brightwater Heating and Plumbing, this is Lena. How can I help you?"},
+      {"speaker": "caller", "text": "Good morning. My name is Helga Brandt. My heating stopped working completely last night and it is really cold in the flat."},
+      {"speaker": "agent", "text": "I'm sorry to hear that, Mrs Brandt. Is the radiator cold everywhere, or only in one room?"},
+      {"speaker": "caller", "text": "Everywhere. I'm 81 and I live alone, I really need someone today if possible."},
+      {"speaker": "agent", "text": "Understood. What is your address?"},
+      {"speaker": "caller", "text": "4 Garden Street, ground floor."},
+      {"speaker": "agent", "text": "And is this number the best one to reach you?"},
+      {"speaker": "caller", "text": "Yes, that's my mobile."},
+      {"speaker": "agent", "text": "Thank you. I'll pass this on to our on-call team right away. Someone will call you back shortly."}
+    ]
+  },
+  {
+    "call_id": "BW-1002",
+    "received": "Monday 10:15",
+    "caller_id": "+49 170 000 1002",
+    "duration_sec": 118,
+    "transcript": [
+      {"speaker": "agent", "text": "Good morning, Brightwater Heating and Plumbing, this is Lena. How can I help you?"},
+      {"speaker": "caller", "text": "Hi, Tom Keller here. I'd like to book the yearly maintenance for my boiler."},
+      {"speaker": "agent", "text": "Of course. Which day would suit you?"},
+      {"speaker": "caller", "text": "Wednesday morning would be ideal."},
+      {"speaker": "agent", "text": "Noted. What's the address?"},
+      {"speaker": "caller", "text": "27 Mill Lane."},
+      {"speaker": "agent", "text": "And an email address for the confirmation?"},
+      {"speaker": "caller", "text": "tom.keller@example.com"},
+      {"speaker": "agent", "text": "Thank you, Mr Keller. You'll receive a confirmation shortly."}
+    ]
+  },
+  {
+    "call_id": "BW-1003",
+    "received": "Monday 13:02",
+    "caller_id": null,
+    "duration_sec": 41,
+    "transcript": [
+      {"speaker": "agent", "text": "Good afternoon, Brightwater Heating and Plumbing, this is Lena. How can I help you?"},
+      {"speaker": "caller", "text": "Yeah hi, it's Sandra. The tap in the kitchen keeps dripping, can someone have a look this week?"},
+      {"speaker": "agent", "text": "Sure, Sandra. Could you tell me your full name and address?"},
+      {"speaker": "caller", "text": "It's Sandra, I'm in the... sorry, I have to go, I'll"}
+    ]
+  },
+  {
+    "call_id": "BW-1004",
+    "received": "Monday 15:30",
+    "caller_id": "+49 170 000 1004",
+    "duration_sec": 196,
+    "transcript": [
+      {"speaker": "agent", "text": "Good afternoon, Brightwater Heating and Plumbing, this is Lena. How can I help you?"},
+      {"speaker": "caller", "text": "Hello, this is Priya Nair. We're thinking about renovating our bathroom and would like a quote."},
+      {"speaker": "agent", "text": "Happy to help. A technician would come by to take measurements. When would suit you?"},
+      {"speaker": "caller", "text": "Thursday afternoon. Oh wait, no, Thursday I'm at work. Friday afternoon is better."},
+      {"speaker": "agent", "text": "Friday afternoon, noted. What's the address?"},
+      {"speaker": "caller", "text": "15 Oak Avenue. And one more thing: I got an invoice from you last month and I think I was charged twice."},
+      {"speaker": "agent", "text": "I'm sorry about that. I'll pass it on to our office. Do you have the invoice number?"},
+      {"speaker": "caller", "text": "Not at hand. My email is priya.nair@example.com, they can write to me."},
+      {"speaker": "agent", "text": "Perfect. You'll hear from us about both topics."}
+    ]
+  }
+]

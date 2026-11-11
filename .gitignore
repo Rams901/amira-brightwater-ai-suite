@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.netlify/
+.DS_Store
+.env
+.env.local
+data/*.sqlite
+data/*.sqlite-*
+*.png
+AI_Engineer_Challenge.pdf

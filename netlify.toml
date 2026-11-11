@@ -1,0 +1,30 @@
+[build]
+  command = "npm run build"
+  publish = "dist/client"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NODE_OPTIONS = "--no-warnings"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = [
+    "availability.json",
+    "sample_calls.json",
+    "sample_calls_arabic.json",
+    "lena_prompt.txt",
+    "lena_prompt_v2.txt",
+    "data/challenge2_ab_results.json"
+  ]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

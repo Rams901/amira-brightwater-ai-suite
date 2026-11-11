@@ -1,0 +1,41 @@
+{
+  "name": "amira-brightwater-ops-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Amira AI Engineer Challenge (Part 1 Plus) — Hybrid System-One (TypeSafe Jev) + System-Two (DeepSeek Flash 4.1) Call-to-Outcome Operations Studio with English & Arabic support",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"tsx watch --no-warnings src/server/index.ts\" \"vite\"",
+    "dev:server": "tsx watch --no-warnings src/server/index.ts",
+    "dev:client": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "node --no-warnings --import tsx src/server/index.ts",
+    "test": "NODE_OPTIONS='--no-warnings' vitest run",
+    "test:c2": "NODE_OPTIONS='--no-warnings' vitest run tests/challenge2.test.ts",
+    "eval:lena": "node --no-warnings --import tsx scripts/test-lena-deepseek.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.7.0",
+    "express": "^5.1.0",
+    "lucide-react": "^0.511.0",
+    "multer": "^2.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "serverless-http": "^4.0.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.3"
+  }
+}

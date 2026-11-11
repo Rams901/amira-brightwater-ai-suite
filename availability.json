@@ -1,0 +1,14 @@
+{
+  "note": "Regular slots only. Urgent cases are never booked into a regular slot; they go to the on-call team.",
+  "slots": [
+    {"day": "Monday",    "period": "afternoon", "status": "booked"},
+    {"day": "Tuesday",   "period": "morning",   "status": "booked"},
+    {"day": "Tuesday",   "period": "afternoon", "status": "free"},
+    {"day": "Wednesday", "period": "morning",   "status": "booked"},
+    {"day": "Wednesday", "period": "afternoon", "status": "free"},
+    {"day": "Thursday",  "period": "morning",   "status": "free"},
+    {"day": "Thursday",  "period": "afternoon", "status": "booked"},
+    {"day": "Friday",    "period": "morning",   "status": "free"},
+    {"day": "Friday",    "period": "afternoon", "status": "free"}
+  ]
+}
