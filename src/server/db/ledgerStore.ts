@@ -1,15 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { createRequire } from "node:module";
 import type {
   AvailabilitySchedule,
   ProcessedCallRecord,
 } from "../../shared/types.js";
 import { AvailabilityScheduleSchema } from "../../shared/schemas.js";
 import { IS_SERVERLESS, readProjectJson } from "../dataFiles.js";
-
-const require = createRequire(import.meta.url);
 
 export function hashCallPayload(rawCall: unknown): string {
   return crypto
@@ -36,9 +33,17 @@ interface SqliteDatabaseLike {
 
 function tryOpenSqlite(dbPath: string): SqliteDatabaseLike | null {
   try {
-    const sqliteMod = require("node:sqlite") as {
-      DatabaseSync: new (p: string) => SqliteDatabaseLike;
-    };
+    const getBuiltin = (
+      process as NodeJS.Process & {
+        getBuiltinModule?: (id: string) => unknown;
+      }
+    ).getBuiltinModule;
+    const sqliteMod = (getBuiltin ? getBuiltin("node:sqlite") : undefined) as
+      | { DatabaseSync: new (p: string) => SqliteDatabaseLike }
+      | undefined;
+    if (!sqliteMod?.DatabaseSync) {
+      return null;
+    }
     if (dbPath !== ":memory:") {
       fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     }

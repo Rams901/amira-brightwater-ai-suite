@@ -3,6 +3,7 @@ import path from "node:path";
 import express from "express";
 import multer from "multer";
 import {
+  AvailabilityScheduleSchema,
   MAX_UPLOAD_BYTES,
   validateRestrictedJsonInput,
 } from "../shared/schemas.js";
@@ -227,16 +228,36 @@ app.post("/api/upload/file", upload.single("file"), (req, res) => {
  */
 app.post("/api/webhooks/call", async (req, res) => {
   try {
+    const isWrapped =
+      req.body &&
+      typeof req.body === "object" &&
+      !Array.isArray(req.body) &&
+      "call" in req.body &&
+      !("call_id" in req.body);
+
+    const callPayload = isWrapped ? req.body.call : req.body;
     const engineMode: EngineMode =
-      req.query.mode === "cascade" || req.query.mode === "benchmark"
-        ? req.query.mode
+      req.body?.engineMode === "cascade" ||
+      req.body?.engineMode === "benchmark" ||
+      req.query.mode === "cascade" ||
+      req.query.mode === "benchmark"
+        ? (req.body?.engineMode ?? req.query.mode)
         : "hybrid";
 
-    const payload = req.body;
-    const { records, availability, durationMs } = await processCallBatch([payload], {
+    if (isWrapped && req.body.availability) {
+      const parsedAvail = AvailabilityScheduleSchema.safeParse(req.body.availability);
+      if (parsedAvail.success) {
+        store.saveAvailability(parsedAvail.data);
+      }
+    }
+
+    const bypassIdempotency = Boolean(isWrapped && req.body.bypassIdempotency === true);
+
+    const { records, availability, durationMs } = await processCallBatch([callPayload], {
       store,
       engineMode,
       resetBeforeRun: false,
+      bypassIdempotency,
     });
     res.json({
       record: records[0],
@@ -451,6 +472,26 @@ app.post("/api/lena/simulate", async (req, res) => {
 
     const result = await runLenaAbScenario(customScenario);
     res.json({ result });
+  } catch (err) {
+    res.status(500).json({
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+app.post("/api/lena/eval", async (req, res) => {
+  try {
+    const onlyScenarioId =
+      typeof req.body?.onlyScenarioId === "string" ? req.body.onlyScenarioId : undefined;
+    const t0 = performance.now();
+    const results = await runAllLenaScenarios({ onlyScenarioId });
+    const totalDurationMs = Math.round(performance.now() - t0);
+    const providerMode = getRedactedAiStatus().effectiveMode;
+    res.json({
+      totalDurationMs,
+      providerMode,
+      results,
+    });
   } catch (err) {
     res.status(500).json({
       error: err instanceof Error ? err.message : String(err),

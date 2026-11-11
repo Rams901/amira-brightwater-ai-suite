@@ -20,6 +20,11 @@ import {
   ShieldAlert,
   TestTube2,
 } from "lucide-react";
+
+/** True for `vite build` (Netlify). Avoids buffered NDJSON and the 10s function limit. */
+const useOneRequestPerItem = Boolean(
+  (import.meta as ImportMeta & { env?: { PROD?: boolean } }).env?.PROD
+);
 import type {
   AvailabilitySchedule,
   EngineMode,
@@ -174,38 +179,54 @@ export function App() {
   }, []);
 
   const fetchInitialState = async () => {
-    const res = await fetch("/api/state");
-    const data = await res.json();
-    setAvailability(data.availability);
-    setRecords(data.records);
-    setAiStatus(data.aiStatus);
-    if (data.lastBatchSummary) {
-      setLastBatch(data.lastBatchSummary);
-    }
-    if (data.cachedQaResults) {
-      setQaResults(data.cachedQaResults.results);
-      setQaMeta({
-        ranAt: data.cachedQaResults.ranAt,
-        providerMode: data.cachedQaResults.providerMode,
-        totalDurationMs: data.cachedQaResults.totalDurationMs,
+    try {
+      const res = await fetch("/api/state");
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        setUploadAlert({
+          tone: "error",
+          text: `API /api/state returned HTTP ${res.status}: ${errText.slice(0, 140)}`,
+        });
+        return;
+      }
+      const data = await res.json();
+      if (data.availability) setAvailability(data.availability);
+      const safeRecords = Array.isArray(data.records) ? data.records : [];
+      setRecords(safeRecords);
+      if (data.aiStatus) setAiStatus(data.aiStatus);
+      if (data.lastBatchSummary) {
+        setLastBatch(data.lastBatchSummary);
+      }
+      if (data.cachedQaResults && Array.isArray(data.cachedQaResults.results)) {
+        setQaResults(data.cachedQaResults.results);
+        setQaMeta({
+          ranAt: data.cachedQaResults.ranAt,
+          providerMode: data.cachedQaResults.providerMode,
+          totalDurationMs: data.cachedQaResults.totalDurationMs,
+        });
+      }
+      if (typeof data.correctedLenaPrompt === "string") {
+        setCorrectedLenaPrompt(data.correctedLenaPrompt);
+      }
+      if (data.multiTurnAbSummary) {
+        setMultiTurnSummary(data.multiTurnAbSummary);
+      }
+      if (data.cachedLenaEvals && Array.isArray(data.cachedLenaEvals.results)) {
+        setLenaEvalResults(data.cachedLenaEvals.results);
+        setLenaEvalMeta({
+          ranAt: data.cachedLenaEvals.ranAt,
+          providerMode: data.cachedLenaEvals.providerMode,
+          totalDurationMs: data.cachedLenaEvals.totalDurationMs,
+        });
+      }
+      if (safeRecords.length > 0) {
+        setSelectedCallId(safeRecords[0].extracted.call_id);
+      }
+    } catch (err) {
+      setUploadAlert({
+        tone: "error",
+        text: `Failed to reach /api/state: ${err instanceof Error ? err.message : String(err)}`,
       });
-    }
-    if (typeof data.correctedLenaPrompt === "string") {
-      setCorrectedLenaPrompt(data.correctedLenaPrompt);
-    }
-    if (data.multiTurnAbSummary) {
-      setMultiTurnSummary(data.multiTurnAbSummary);
-    }
-    if (data.cachedLenaEvals) {
-      setLenaEvalResults(data.cachedLenaEvals.results);
-      setLenaEvalMeta({
-        ranAt: data.cachedLenaEvals.ranAt,
-        providerMode: data.cachedLenaEvals.providerMode,
-        totalDurationMs: data.cachedLenaEvals.totalDurationMs,
-      });
-    }
-    if (data.records.length > 0) {
-      setSelectedCallId(data.records[0].extracted.call_id);
     }
   };
 
@@ -213,17 +234,22 @@ export function App() {
     presetId: "english" | "arabic" | "bilingual",
     silent = false
   ) => {
-    const res = await fetch(`/api/presets/${presetId}`);
-    const data = await res.json();
-    if (res.ok) {
-      setStagedFileName(data.fileName);
-      setStagedCalls(data.calls);
-      if (!silent) {
-        setUploadAlert({
-          tone: "info",
-          text: `Staged ${data.calls.length} call(s) from ${data.fileName}. Click "Run ${data.calls.length} Calls Fresh" to execute on a clean availability schedule.`,
-        });
+    try {
+      const res = await fetch(`/api/presets/${presetId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.calls)) {
+        setStagedFileName(data.fileName ?? "sample_calls.json");
+        setStagedCalls(data.calls);
+        if (!silent) {
+          setUploadAlert({
+            tone: "info",
+            text: `Staged ${data.calls.length} call(s) from ${data.fileName}. Click "Run ${data.calls.length} Calls" to execute on a clean availability schedule.`,
+          });
+        }
       }
+    } catch {
+      // Ignore preset load error silently if offline
     }
   };
 
@@ -308,6 +334,69 @@ export function App() {
     setLiveStatusLine(
       `Starting ${modeToUse.toUpperCase()} run on ${stagedFileName} (${callsToRun.length} calls)...`
     );
+
+    // Netlify Functions buffer the whole response and time out on long streams.
+    // In production, process one call per request so each invocation stays under the limit.
+    if (useOneRequestPerItem) {
+      const batchStart = performance.now();
+      const collected: ProcessedCallRecord[] = [];
+      try {
+        if (startFreshOnRun) {
+          const resetRes = await fetch("/api/reset", { method: "POST" });
+          const resetData = await resetRes.json().catch(() => ({}));
+          if (!resetRes.ok) {
+            throw new Error(resetData.error ?? `Reset HTTP ${resetRes.status}`);
+          }
+          if (resetData.availability) setAvailability(resetData.availability);
+        }
+        for (let i = 0; i < callsToRun.length; i++) {
+          const call = callsToRun[i] as { call_id?: string };
+          setLiveStatusLine(
+            `[${i + 1}/${callsToRun.length} · ${call.call_id ?? "call"}] Processing...`
+          );
+          const res = await fetch("/api/webhooks/call", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              call,
+              engineMode: modeToUse,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+          const rec = data.record as ProcessedCallRecord;
+          collected.push(rec);
+          setCompletedInBatch(i + 1);
+          if (data.availability) setAvailability(data.availability);
+          if (i === 0) setSelectedCallId(rec.extracted.call_id);
+          setRecords((prev) => {
+            const filtered = prev.filter((r) => r.extracted.call_id !== rec.extracted.call_id);
+            return [...filtered, rec];
+          });
+        }
+        const durationMs = Math.round(performance.now() - batchStart);
+        setLastBatch({
+          fileName: stagedFileName,
+          engineMode: modeToUse,
+          providerMode: aiStatus?.effectiveMode ?? "sandbox",
+          callCount: collected.length,
+          durationMs,
+          completedAt: new Date().toISOString(),
+        });
+        setLiveStatusLine(
+          `Finished ${collected.length} calls from ${stagedFileName} in ${formatMs(durationMs)} (${modeToUse.toUpperCase()}).`
+        );
+        setActiveTab("records");
+      } catch (err) {
+        setUploadAlert({
+          tone: "error",
+          text: err instanceof Error ? err.message : String(err),
+        });
+      } finally {
+        setIsStreaming(false);
+      }
+      return;
+    }
 
     try {
       const res = await fetch("/api/runs/stream", {
@@ -437,6 +526,49 @@ export function App() {
       setQaResults([]);
     }
 
+    if (useOneRequestPerItem) {
+      const ids = onlyTestId
+        ? [onlyTestId]
+        : ["TC-01", "TC-02", "TC-03", "TC-04", "TC-05", "TC-06", "TC-07", "TC-08", "TC-09", "TC-10"];
+      const t0 = performance.now();
+      try {
+        for (let i = 0; i < ids.length; i++) {
+          setQaProgressText(`Running ${ids[i]} (${i + 1}/${ids.length})...`);
+          const res = await fetch("/api/tests/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ onlyTestId: ids[i] }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+          const tc = (data.results as TestCaseResult[])[0];
+          if (tc) {
+            setQaResults((prev) => {
+              const list = prev ?? [];
+              const idx = list.findIndex((x) => x.test_id === tc.test_id);
+              if (idx >= 0) {
+                const copy = [...list];
+                copy[idx] = tc;
+                return copy;
+              }
+              return [...list, tc];
+            });
+          }
+        }
+        setQaMeta({
+          ranAt: new Date().toISOString(),
+          providerMode: aiStatus?.effectiveMode ?? "sandbox",
+          totalDurationMs: Math.round(performance.now() - t0),
+        });
+      } catch (err) {
+        setQaError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setQaRunning(false);
+        setQaProgressText(null);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/tests/stream", {
         method: "POST",
@@ -507,6 +639,49 @@ export function App() {
 
     if (!onlyScenarioId) {
       setLenaEvalResults([]);
+    }
+
+    if (useOneRequestPerItem) {
+      const ids = onlyScenarioId
+        ? [onlyScenarioId]
+        : ["L2-01", "L2-02", "L2-03", "L2-04", "L2-05", "L2-06", "L2-07", "L2-08"];
+      const t0 = performance.now();
+      try {
+        for (let i = 0; i < ids.length; i++) {
+          setLenaEvalProgress(`Running ${ids[i]} (${i + 1}/${ids.length})...`);
+          const res = await fetch("/api/lena/eval", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ onlyScenarioId: ids[i] }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+          const item = (data.results as LenaScenarioEvalResult[])[0];
+          if (item) {
+            setLenaEvalResults((prev) => {
+              const list = prev ?? [];
+              const idx = list.findIndex((x) => x.scenario_id === item.scenario_id);
+              if (idx >= 0) {
+                const copy = [...list];
+                copy[idx] = item;
+                return copy;
+              }
+              return [...list, item];
+            });
+          }
+        }
+        setLenaEvalMeta({
+          ranAt: new Date().toISOString(),
+          providerMode: aiStatus?.effectiveMode ?? "sandbox",
+          totalDurationMs: Math.round(performance.now() - t0),
+        });
+      } catch (err) {
+        setLenaEvalError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLenaEvalRunning(false);
+        setLenaEvalProgress(null);
+      }
+      return;
     }
 
     try {
