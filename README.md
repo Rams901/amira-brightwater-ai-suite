@@ -41,7 +41,9 @@ npm run build     # Type-checks (tsc --noEmit) and builds production bundle into
 
 ---
 
-## Deploy to Netlify (Zero Config via `netlify.toml`)
+## Deploy to Netlify (1-Click or Auto-Import via `netlify.toml`)
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Rams901/amira-brightwater-ai-suite)
 
 This repository includes `netlify.toml` and `netlify/functions/api.ts` (`serverless-http` wrapping the Express API):
 
