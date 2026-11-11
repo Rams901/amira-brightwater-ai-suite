@@ -38,18 +38,3 @@ Open **`http://localhost:5173`** to explore:
 npm test          # Runs Vitest suite across Challenge 1 (10 EN/AR QA cases) & Challenge 2 (10 multi-turn + 8 voice guardrail cases)
 npm run build     # Type-checks (tsc --noEmit) and builds production bundle into dist/client
 ```
-
----
-
-## Deploy to Netlify (1-Click or Auto-Import via `netlify.toml`)
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Rams901/amira-brightwater-ai-suite)
-
-This repository includes `netlify.toml` and `netlify/functions/api.ts` (`serverless-http` wrapping the Express API):
-
-1. Import this GitHub repository in **Netlify** (`Add new site -> Import an existing project`).
-2. Netlify automatically detects `npm run build`, publishes `dist/client`, and deploys `/api/*` via `netlify/functions/api.ts` on Node 22.
-3. *(Optional for Live LLM calls)* In **Site configuration -> Environment variables**, add:
-   - `TYPESAFE_API_KEY`
-   - `DEEPSEEK_API_KEY`
-   *(Without env vars, the deployed site runs cleanly in instant Bilingual Sandbox mode, or reviewers can paste keys in the top-right UI drawer.)*
